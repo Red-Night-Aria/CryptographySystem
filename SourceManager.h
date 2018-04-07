@@ -18,6 +18,7 @@ extern "C"{
 
 using namespace std;
 
+
 struct NetMessage{
     sockaddr addr;
     socklen_t len;
@@ -28,10 +29,13 @@ struct MyFile{
     array<char, 256> sha_256;
 };
 
+using FileCollection = map<string, list<MyFile>>;
+
 class SourceManager {
 public:
-    static void add_online_user(char* username, NetMessage* addr);
-    static void fetch_user_fileList(char* username);
+    static void add_online_user(string username, NetMessage& addr);
+    static void fetch_fileList(char* username);
+    static FileCollection fetch_fileList();
     static void add_user_share(const string& username, vector<MyFile>& content);
 
     /*if success, add user to online list; failed when user already online.*/
@@ -40,7 +44,7 @@ public:
 
 private:
     static map<string, NetMessage> online_users;
-    static map<string, list<MyFile>> available_files;
+    static FileCollection available_files;
 };
 
 

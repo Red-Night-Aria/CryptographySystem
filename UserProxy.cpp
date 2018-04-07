@@ -74,6 +74,7 @@ int UserProxy::sign_in() {
     else {
         Rio_writen(client_fd, (void*)"1", 1);
         hasLogin = true;
+        SourceManager::add_online_user(username, net_msg);
     }
 
     return 0;
@@ -105,6 +106,10 @@ int UserProxy::upload() {
 }
 
 int UserProxy::get_file_list() {
+    if (!hasLogin) return -1;
+
+    FileCollection fc = SourceManager::fetch_fileList();
+
     return 0;
 }
 
