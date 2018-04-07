@@ -36,7 +36,7 @@ int UserProxy::serve() {
                 get_file_list();
                 break;
             case '5':
-                request_file();
+                request_addr();
                 break;
             case '0':
             default:
@@ -81,7 +81,10 @@ int UserProxy::sign_in() {
 }
 
 int UserProxy::upload() {
-    if (!hasLogin) return -1;
+    if (!hasLogin) {
+        Rio_writen(client_fd, (void*)"0", 1);
+        return -1;
+    }
 
     vector<MyFile> data = {};
     char filename_buf[SourceManager::MAXFILENAME+1];
@@ -109,11 +112,28 @@ int UserProxy::get_file_list() {
     if (!hasLogin) return -1;
 
     FileCollection fc = SourceManager::fetch_fileList();
+    size_t num = fc.size();
+    Rio_writen(client_fd, &num, 4);
+    for (auto& file: fc){
+        Rio_writen(client_fd, reinterpret_cast<void* >(file.filename.c_str()), file.filename.size());
+        Rio_writen(client_fd, reinterpret_cast<void* >("\n"), 1);
+        Rio_writen(client_fd, file.sha_256.data(), 256);
+    }
 
     return 0;
 }
 
-int UserProxy::request_file() {
+int UserProxy::request_addr() {
+    if (!hasLogin) return -1;
+
+    char user_buf[MAXUSERNAME];
+    Rio_readlineb(rp, user_buf, MAXUSERNAME);
+    string req_user = user_buf;
+    const NetMessage& req_netmsg = SourceManager::get_user_addr(user_buf);
+//    char write_buf[sizeof(NetMessage)];
+//    memcpy(write_buf, &req_netmsg, sizeof(NetMessage));
+    Rio_writen(client_fd, reinterpret_cast<void* >(&req_netmsg), sizeof(NetMessage));
+
     return 0;
 }
 

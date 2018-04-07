@@ -29,7 +29,7 @@ struct MyFile{
     array<char, 256> sha_256;
 };
 
-using FileCollection = map<string, list<MyFile>>;
+using FileCollection = vector<MyFile>;
 
 class SourceManager {
 public:
@@ -37,6 +37,7 @@ public:
     static void fetch_fileList(char* username);
     static FileCollection fetch_fileList();
     static void add_user_share(const string& username, vector<MyFile>& content);
+    static const NetMessage& get_user_addr(const string& username);
 
     /*if success, add user to online list; failed when user already online.*/
     static bool check_login(const string& username, const string& password);
@@ -44,7 +45,7 @@ public:
 
 private:
     static map<string, NetMessage> online_users;
-    static FileCollection available_files;
+    static map<string, list<MyFile>> users_files;
 };
 
 

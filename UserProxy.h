@@ -33,7 +33,7 @@ private:
     int sign_in();
     int upload();
     int get_file_list();
-    int request_file();
+    int request_addr();
     static const int MAXUSERNAME = 40;
     static const int MAXPASSWORD = 40;
     std::string username;

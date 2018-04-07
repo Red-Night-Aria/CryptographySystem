@@ -16,6 +16,10 @@ void SourceManager::fetch_fileList(char *username) {
 
 }
 
-map<string, list<MyFile>> SourceManager::fetch_fileList() {
-    return map<string, list<MyFile>>();
+FileCollection SourceManager::fetch_fileList() {
+    return vector<MyFile>();
+}
+
+const NetMessage &SourceManager::get_user_addr(const string &username) {
+    return <#initializer#>;
 }
