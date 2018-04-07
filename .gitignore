@@ -5,3 +5,8 @@
 cmake-build-debug
 *.xml
 *.bmp
+CMake*
+CryptographySystem
+CryptographySystem.cbp
+cmake_install.cmake
+Makefile

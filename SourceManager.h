@@ -13,6 +13,8 @@ extern "C"{
 #include <string>
 #include <list>
 #include <map>
+#include <array>
+#include <vector>
 
 using namespace std;
 
@@ -21,22 +23,24 @@ struct NetMessage{
     socklen_t len;
 };
 
-struct File{
+struct MyFile{
     string filename;
-    char sha_256[256];
+    array<char, 256> sha_256;
 };
 
 class SourceManager {
 public:
     static void add_online_user(char* username, NetMessage* addr);
     static void fetch_user_fileList(char* username);
+    static void add_user_share(const string& username, vector<MyFile>& content);
 
     /*if success, add user to online list; failed when user already online.*/
     static bool check_login(const string& username, const string& password);
+    static const size_t MAXFILENAME = 256;
 
 private:
     static map<string, NetMessage> online_users;
-    static map<string, list<File>> available_files;
+    static map<string, list<MyFile>> available_files;
 };
 
 

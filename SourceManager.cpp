@@ -7,3 +7,7 @@
 bool SourceManager::check_login(const string &username, const string &password) {
     return true;
 }
+
+void SourceManager::add_user_share(const string &username, vector<MyFile> &content) {
+
+}

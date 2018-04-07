@@ -3,8 +3,11 @@
 //
 
 #include "UserProxy.h"
-
 #include <string>
+#include <vector>
+#include <array>
+#include <iostream>
+
 using namespace std;
 UserProxy::UserProxy(int fd, NetMessage user_net_msg):rp(new rio_t()), client_fd(fd), net_msg(user_net_msg) {
     rio_readinitb(rp, fd);
@@ -57,20 +60,19 @@ int UserProxy::sign_up() {
 }
 
 int UserProxy::sign_in() {
-    //rio_writen(client_fd, (void* )"2\n", 2);
-
     /*read username and password from socket*/
     char buf1[MAXUSERNAME], buf2[MAXPASSWORD];
     if (Rio_readlineb(rp, buf1, MAXUSERNAME)<=0 || Rio_readlineb(rp, buf2, MAXPASSWORD)<=0)
         return -1;
 
-    username = buf1; printf("%s\n", username.c_str());
-    string password = buf2; printf("%s\n", password.c_str());
+    username = buf1; //printf("%s\n", username.c_str());
+    string password = buf2; //printf("%s\n", password.c_str());
+
     if (!SourceManager::check_login(username, password)){
-        Rio_writen(client_fd, (void*)'0', 1);
+        Rio_writen(client_fd, (void*)"0", 1);
     }
     else {
-        Rio_writen(client_fd, (void*)'1', 1);
+        Rio_writen(client_fd, (void*)"1", 1);
         hasLogin = true;
     }
 
@@ -78,6 +80,27 @@ int UserProxy::sign_in() {
 }
 
 int UserProxy::upload() {
+    if (!hasLogin) return -1;
+
+    vector<MyFile> data = {};
+    char filename_buf[SourceManager::MAXFILENAME+1];
+
+    unsigned int num;
+    Rio_readnb(rp, &num, 4);
+    for (int i=0; i<num; i++){
+        MyFile tmp = {};
+
+        Rio_readlineb(rp, filename_buf, SourceManager::MAXFILENAME);
+        Rio_readlineb(rp, tmp.sha_256.data(), SourceManager::MAXFILENAME);
+        tmp.filename = filename_buf;
+
+        data.push_back(tmp);
+    }
+
+//    for (auto item: data){
+//        cout << item.filename << " "<< item.sha_256.data() << endl;
+//    }
+    SourceManager::add_user_share(username, data);
     return 0;
 }
 
