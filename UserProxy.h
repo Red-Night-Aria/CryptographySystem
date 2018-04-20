@@ -34,8 +34,8 @@ private:
     int upload();
     int get_file_list();
     int request_addr();
+    string randstr(const int n = SALT_LEN);
     static const int MAXUSERNAME = 40;
-    static const int MAXPASSWORD = 40;
     std::string username;
     bool hasLogin = false;
 

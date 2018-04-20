@@ -20,7 +20,6 @@ int UserProxy::serve() {
     bool quitFlag = false;
     while (true){
         rio_readnb(rp, &opt, 1);
-        //char tmp[2]; rio_readnb(rp, &tmp, 2); //drop out \r\n. just for telnet test
         //write(stdout->_fileno, &opt, 1);
         switch (opt){
             case '1':
@@ -54,21 +53,36 @@ UserProxy::~UserProxy() {
 }
 
 int UserProxy::sign_up() {
-    //rio_writen(client_fd, (void* )"1\n", 2);
-    //TODO
+    char buf1[MAXUSERNAME], buf2[SHA256_LEN];
+
+    /*network error. no reply*/
+    if (Rio_readlineb(rp, buf1, MAXUSERNAME)<=0 || Rio_readnb(rp, buf2, SHA256_LEN)<SHA256_LEN)
+        return -1;
+
+    string newusr = buf1;
+
+    /*db error. reply 0*/
+    if (!SourceManager::sign_up(newusr, buf2)){
+        Rio_writen(client_fd, (void*)"0", 1);
+        return -2;
+    }
+
+    Rio_writen(client_fd, (void*)"1", 1);
     return 0;
 }
 
 int UserProxy::sign_in() {
+    string salt = randstr();
+    Rio_writen(client_fd, (void *)salt.c_str(), SALT_LEN);
+
     /*read username and password from socket*/
-    char buf1[MAXUSERNAME], buf2[MAXPASSWORD];
-    if (Rio_readlineb(rp, buf1, MAXUSERNAME)<=0 || Rio_readlineb(rp, buf2, MAXPASSWORD)<=0)
+    char buf1[MAXUSERNAME], buf2[SHA256_LEN];
+    if (Rio_readlineb(rp, buf1, MAXUSERNAME)<=0 || Rio_readnb(rp, buf2, SHA256_LEN)<=0)
         return -1;
 
-    username = buf1; //printf("%s\n", username.c_str());
-    string password = buf2; //printf("%s\n", password.c_str());
+    username = buf1;
 
-    if (!SourceManager::check_login(username, password)){
+    if (!SourceManager::check_login(username, buf2, salt)){
         Rio_writen(client_fd, (void*)"0", 1);
     }
     else {
@@ -115,8 +129,8 @@ int UserProxy::get_file_list() {
     size_t num = fc.size();
     Rio_writen(client_fd, &num, 4);
     for (auto& file: fc){
-        Rio_writen(client_fd, reinterpret_cast<void* >(file.filename.c_str()), file.filename.size());
-        Rio_writen(client_fd, reinterpret_cast<void* >("\n"), 1);
+        Rio_writen(client_fd, (void *)(file.filename.c_str()), file.filename.size());
+        Rio_writen(client_fd, (void* )("\n"), 1);
         Rio_writen(client_fd, file.sha_256.data(), 256);
     }
 
@@ -132,9 +146,17 @@ int UserProxy::request_addr() {
     const NetMessage& req_netmsg = SourceManager::get_user_addr(user_buf);
 //    char write_buf[sizeof(NetMessage)];
 //    memcpy(write_buf, &req_netmsg, sizeof(NetMessage));
-    Rio_writen(client_fd, reinterpret_cast<void* >(&req_netmsg), sizeof(NetMessage));
+    Rio_writen(client_fd, (void* )(&req_netmsg), sizeof(NetMessage));
 
     return 0;
+}
+
+string UserProxy::randstr(const int n) {
+    string s = {};
+    for (int i=0; i<n; i++){
+        s[i] = rand()%256;
+    }
+    return s;
 }
 
 //void UserProxy::update_available_files(std::string username) {

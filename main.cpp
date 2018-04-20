@@ -6,19 +6,26 @@ extern "C" {
 #include "UserProxy.h"
 #include <tuple>
 
+
 using namespace std;
 
 typedef tuple<int, NetMessage> args_t;
 
 void* client_handler(void *pargs);
+SQLite::Database* SourceManager::db_ptr = nullptr;
+map<string, NetMessage> SourceManager::online_users = {};
+map<string, list<MyFile>> SourceManager::users_files = {};
 
 int main(int argc, char** argv){
     //Signal(SIG_INT)
+    SourceManager::bind_db("/home/redim/user.db3");
+
     list<pthread_t* > threadList = {};
-    struct sockaddr clientaddr = {};
+    sockaddr clientaddr = {};
     socklen_t clientlen;
     char LISTENPORT[6];
     strcpy(LISTENPORT, "2345");
+
     int listenfd = open_listenfd(LISTENPORT);
     while (true){
         int clientfd = Accept(listenfd, &clientaddr, &clientlen);
@@ -35,7 +42,6 @@ int main(int argc, char** argv){
             Close(clientfd);
         }
     }
-
 
 }
 

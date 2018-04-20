@@ -1,6 +1,6 @@
-opt     operation            param                       return
-'1'      signUp         {username}\n{password}\n           0/1
-'2'      signIn         {username}\n{password}\n           0/1
+opt     operation            param                                               return
+'1'      signUp         {username}\n{sha-256(username+psw)}                        0/1
+'2'      signIn         {username}\n{sha-256(sha-256(username+psw)+salt)}    {salt(8)} 0/1
 '3'      upload         {num}[{filename}\n{sha-256}]*num   0/1
 '4'      getfilelist         NULL                         0/{user_nums}[{user}\n{file_nums}[{filename}\n{sha-256}]*file_nums]*user_nums
 '5'      request_addr       {username}\n                  0/{net_msg}
