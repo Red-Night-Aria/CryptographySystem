@@ -25,33 +25,27 @@ bool SourceManager::check_login(const string &username, const char *digest, cons
         SHA256((unsigned char *)concat_str, SHA256_LEN+SALT_LEN, expect_digest);
 
         bool flag = true;
-        for (int i=0; i<SHA256_LEN; i++)
-            if (expect_digest[i] != (unsigned char)digest[i]) {
+        for (int i=0; i<SHA256_LEN; i++) {
+            if (expect_digest[i] != (unsigned char) digest[i]) {
                 flag = false;
                 break;
             }
+        }
         return flag;
     }
     return false;
 }
 
 void SourceManager::add_user_share(const string &username, vector<MyFile> &content) {
-
-}
-
-void SourceManager::fetch_fileList(char *username) {
-
-}
-
-FileCollection SourceManager::fetch_fileList() {
-    return vector<MyFile>();
+    users_files[username].insert(content.cbegin(), content.cend());
 }
 
 const NetMessage &SourceManager::get_user_addr(const string &username) {
+    return online_users[username];
 }
 
 void SourceManager::add_online_user(string username, NetMessage &addr) {
-
+    online_users[username] = addr;
 }
 
 void SourceManager::bind_db(const string &dbpath) {
@@ -90,4 +84,8 @@ bool SourceManager::sign_up(const string &username, const char *sha256_pwd) {
     }
 
     return true;
+}
+
+const map<string, set<MyFile>> &SourceManager::fetch_userfile_List() {
+    return users_files;
 }

@@ -23,7 +23,7 @@ public:
 class UserProxy {
 public:
     explicit UserProxy(int fd, NetMessage user_net_msg);
-    int serve(); /*run until client quit or error occur*/
+    void serve(); /*run until client quit or error occur*/
     ~UserProxy();
 private:
     rio_t* rp;

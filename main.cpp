@@ -14,13 +14,13 @@ typedef tuple<int, NetMessage> args_t;
 void* client_handler(void *pargs);
 SQLite::Database* SourceManager::db_ptr = nullptr;
 map<string, NetMessage> SourceManager::online_users = {};
-map<string, list<MyFile>> SourceManager::users_files = {};
+map<string, set<MyFile>> SourceManager::users_files = {};
 
 int main(int argc, char** argv){
     //Signal(SIG_INT)
     SourceManager::bind_db("/home/redim/user.db3");
 
-    list<pthread_t* > threadList = {};
+    //list<pthread_t* > threadList = {};
     sockaddr clientaddr = {};
     socklen_t clientlen;
     char LISTENPORT[6];
@@ -35,7 +35,8 @@ int main(int argc, char** argv){
         args_t args = make_tuple(clientfd, net_mes);
         if (pthread_create(newThread, NULL, client_handler, &args) == 0){
             /* create thread successfully */
-            threadList.push_back(newThread);
+            //threadList.push_back(newThread);
+            pthread_detach(*newThread);
         }
         else{
             rio_writen(clientfd, (void* )"0", 1); //tell client error
@@ -48,7 +49,7 @@ int main(int argc, char** argv){
 void *client_handler(void *pargs) {
     args_t* args = (args_t* )pargs;
     UserProxy responser(get<0>(*args), get<1>(*args));
-    int* state_ptr = new int(responser.serve());
+    responser.serve();
 
-    return state_ptr; /*hopefully responser will close clientfd itself.*/
+    /*hopefully responser will close clientfd itself.*/
 }

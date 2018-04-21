@@ -13,14 +13,26 @@ UserProxy::UserProxy(int fd, NetMessage user_net_msg):rp(new rio_t()), client_fd
     rio_readinitb(rp, fd);
 }
 
-int UserProxy::serve() {
-    //TODO: close dead connection
-    int state = 0;
+void UserProxy::serve() {
+    //int state = 1;
     char opt;
     bool quitFlag = false;
     while (true){
-        rio_readnb(rp, &opt, 1);
-        //write(stdout->_fileno, &opt, 1);
+        if (rio_readnb(rp, &opt, 1)<1){
+            /*connection closed*/
+            break;
+        }
+
+        /*
+        * if enter other func when hasLogin=False, then it must be an invaild request.
+        * so we just close the connection by return -1;
+        *
+        * TODO deal with connection broken
+        * TODO unwanted sign_up
+        * */
+        if (!hasLogin && (opt != '1' && opt != '2')){
+            break;
+        }
         switch (opt){
             case '1':
                 sign_up();
@@ -44,7 +56,7 @@ int UserProxy::serve() {
         }
         if (quitFlag) break;
     }
-    return state;
+    //return state;
 }
 
 UserProxy::~UserProxy() {
@@ -77,7 +89,7 @@ int UserProxy::sign_in() {
 
     /*read username and password from socket*/
     char buf1[MAXUSERNAME], buf2[SHA256_LEN];
-    if (Rio_readlineb(rp, buf1, MAXUSERNAME)<=0 || Rio_readnb(rp, buf2, SHA256_LEN)<=0)
+    if (Rio_readlineb(rp, buf1, MAXUSERNAME)<=0 || Rio_readnb(rp, buf2, SHA256_LEN)<SHA256_LEN)
         return -1;
 
     username = buf1;
@@ -95,57 +107,50 @@ int UserProxy::sign_in() {
 }
 
 int UserProxy::upload() {
-    if (!hasLogin) {
-        Rio_writen(client_fd, (void*)"0", 1);
-        return -1;
-    }
-
     vector<MyFile> data = {};
-    char filename_buf[SourceManager::MAXFILENAME+1];
+    char filename_buf[MAXFILENAME+1];
 
-    unsigned int num;
+    u_int32_t num;
     Rio_readnb(rp, &num, 4);
     for (int i=0; i<num; i++){
         MyFile tmp = {};
-
-        Rio_readlineb(rp, filename_buf, SourceManager::MAXFILENAME);
-        Rio_readlineb(rp, tmp.sha_256.data(), SourceManager::MAXFILENAME);
+        Rio_readlineb(rp, filename_buf, MAXFILENAME);
+        Rio_readnb(rp, tmp.sha_256, SHA256_LEN);
         tmp.filename = filename_buf;
-
         data.push_back(tmp);
     }
 
-//    for (auto item: data){
-//        cout << item.filename << " "<< item.sha_256.data() << endl;
-//    }
     SourceManager::add_user_share(username, data);
+    Rio_writen(client_fd, (void*)"1", 1);
     return 0;
 }
 
 int UserProxy::get_file_list() {
-    if (!hasLogin) return -1;
+    const map<string, set<MyFile>> user_file = SourceManager::fetch_userfile_List();
+    u_int32_t user_num = user_file.size();
 
-    FileCollection fc = SourceManager::fetch_fileList();
-    size_t num = fc.size();
-    Rio_writen(client_fd, &num, 4);
-    for (auto& file: fc){
-        Rio_writen(client_fd, (void *)(file.filename.c_str()), file.filename.size());
-        Rio_writen(client_fd, (void* )("\n"), 1);
-        Rio_writen(client_fd, file.sha_256.data(), 256);
+    Rio_writen(client_fd, &user_num, 4);
+    for (auto& item: user_file){
+        string username = item.first;
+        Rio_writen(client_fd, (void *)username.c_str(), username.size());
+        Rio_writen(client_fd, (void *)"\n", 1);
+        u_int32_t book_num = item.second.size();
+        Rio_writen(client_fd, &book_num, 4);
+        for (auto& file: item.second){
+            Rio_writen(client_fd, (void *)file.filename.c_str(), file.filename.size());
+            Rio_writen(client_fd, (void *)"\n", 1);
+            Rio_writen(client_fd, (void *)file.sha_256, SHA256_LEN);
+        }
     }
 
     return 0;
 }
 
 int UserProxy::request_addr() {
-    if (!hasLogin) return -1;
-
-    char user_buf[MAXUSERNAME];
+    char user_buf[MAXUSERNAME+1];
     Rio_readlineb(rp, user_buf, MAXUSERNAME);
     string req_user = user_buf;
     const NetMessage& req_netmsg = SourceManager::get_user_addr(user_buf);
-//    char write_buf[sizeof(NetMessage)];
-//    memcpy(write_buf, &req_netmsg, sizeof(NetMessage));
     Rio_writen(client_fd, (void* )(&req_netmsg), sizeof(NetMessage));
 
     return 0;
